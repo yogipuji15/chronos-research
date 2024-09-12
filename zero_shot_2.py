@@ -41,7 +41,7 @@ class ChronosForecaster:
         result.plot()
         return result
 
-    def calculate_metrics(self, predicted, ground_truth, metrics_df):
+    def calculate_metrics(self, predicted, ground_truth):
         mae = mean_absolute_error(ground_truth, predicted)
         mse = mean_squared_error(ground_truth, predicted)
         rmse = np.sqrt(mse)
@@ -54,8 +54,6 @@ class ChronosForecaster:
             'RMSE': round(rmse,2),
             'MAPE': round(mape,2),
             'R-squared': round(r_squared,2),
-            'MASE': metrics_df.iloc[0, 0],
-            'WQL': metrics_df.iloc[0, 1]
         }
     
     # Split by percentage
@@ -121,42 +119,11 @@ class ChronosForecaster:
             limit_prediction_length=self.limit_pred_len
         )
 
-        # Generate forecast samples ==================
-        forecast_samples = []
-        for batch in tqdm(batcher(test_data.input, batch_size=32)):
-            context = [torch.tensor(entry["target"]) for entry in batch]
-            forecast_samples.append(
-                self.pipeline.predict(
-                    context,
-                    prediction_length=prediction_length,
-                    num_samples=num_samples,
-                ).numpy()
-            )
-        forecast_samples = np.concatenate(forecast_samples)
-
-        # Convert forecast samples into gluonts SampleForecast objects
-        sample_forecasts = []
-        for item, ts in zip(forecast_samples, test_data.input):
-            forecast_start_date = ts["start"] + len(ts["target"])
-            sample_forecasts.append(
-                SampleForecast(samples=item, start_date=forecast_start_date)
-            )
-
-        # Evaluate
-        metrics_df = evaluate_forecasts(
-            sample_forecasts,
-            test_data=test_data,
-            metrics=[
-                MASE(),
-                MeanWeightedSumQuantileLoss(np.arange(0.1, 1.0, 0.1)),
-            ],
-        )
-
         # self.forecast_index = range(len(self.y_train), len(self.y_train) + prediction_length)
         self.forecast_index = range(self.y_test.index[0], self.y_test.index[-1] + 1)
         self.low, self.median, self.high = np.quantile(self.forecast[0].numpy(), [0.1, 0.5, 0.9], axis=0)
         # self.median = self.forecast[0].numpy().mean(axis=0)           # Mean instead of median
-        self.metrics = self.calculate_metrics(self.median, self.y_test, metrics_df)
+        self.metrics = self.calculate_metrics(self.median, self.y_test)
         self.params = json.dumps({
                 "model": model_name,
                 "top_p": top_p,

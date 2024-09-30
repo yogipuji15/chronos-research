@@ -502,8 +502,8 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
 @app.command()
 @use_yaml_config(param_name="config")
 def main(
-    training_data_paths: str,
-    probability: Optional[str] = None,
+    training_data_paths: str = "/home/yogi/chronos-research/arrow_data/training.arrow",
+    probability: Optional[str] = 0.1,
     context_length: int = 512,
     prediction_length: int = 64,
     min_past: int = 64,
@@ -558,7 +558,7 @@ def main(
     log_on_main(f"Using SEED: {seed}", logger)
     transformers.set_seed(seed=seed)
 
-    raw_training_config = deepcopy(locals())
+    raw_training_config = deepcopy(locals()) #save training configuration
     output_dir = Path(output_dir)
     training_data_paths = ast.literal_eval(training_data_paths)
     assert isinstance(training_data_paths, list)
@@ -599,6 +599,7 @@ def main(
         logger,
     )
 
+    # Check panjang data & missing value probability
     train_datasets = [
         Filter(
             partial(
@@ -613,6 +614,7 @@ def main(
 
     log_on_main("Initializing model", logger)
 
+    # memuat model Transformer dengan menyesuaikan berbagai parameter seperti ukuran kosakata, token khusus, dan metode inisialisasi (random atau pre-trained)
     model = load_model(
         model_id=model_id,
         model_type=model_type,

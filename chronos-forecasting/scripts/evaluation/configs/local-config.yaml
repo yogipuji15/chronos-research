@@ -1,0 +1,5 @@
+- name: ANTM
+  hf_repo: /home/yogi/chronos-research/dataset
+  offset: -24
+  prediction_length: 24
+  num_rolls: 1

@@ -44,7 +44,7 @@
   "relative_attention_max_distance": 128,
   "relative_attention_num_buckets": 32,
   "torch_dtype": "float32",
-  "transformers_version": "4.44.2",
+  "transformers_version": "4.45.1",
   "use_cache": true,
   "vocab_size": 4096
 }

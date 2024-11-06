@@ -23,6 +23,8 @@ def test_tokenizer_consistency(n_numerical_tokens: int, n_special_tokens: int):
     df = df.sort_values(by='timestamp')
     df = df.iloc[1165:1177]
 
+    print("timestamp= ",df['timestamp'].values)
+
     # Extract 'close' column as the target (context)
     context_data = df['close'].values
     context_tensor = torch.tensor(context_data).unsqueeze(0)  # Add batch dimension

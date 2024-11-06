@@ -1,6 +1,6 @@
 {
     "training_config": {
-        "training_data_paths": "['/home/yogi/chronos-research/arrow_data/training-stock-new.arrow']",
+        "training_data_paths": "['/home/yogi/chronos-research/arrow_data/training-stock.arrow']",
         "probability": "[0.1]",
         "context_length": 512,
         "max_steps": 400000,
@@ -32,7 +32,7 @@
         "temperature": 1.0,
         "top_k": 50,
         "top_p": 1.0,
-        "seed": 3515929278,
+        "seed": 2912373964,
         "max_missing_prop": 0.0,
         "min_past": 60,
         "prediction_length": 64

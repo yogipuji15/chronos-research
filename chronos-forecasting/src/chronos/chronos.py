@@ -247,18 +247,6 @@ class MeanScaleUniformBins(ChronosTokenizer):
 
 
 class ChronosModel(nn.Module):
-    """
-    A ``ChronosModel`` wraps a ``PreTrainedModel`` object from ``transformers``
-    and uses it to predict sample paths for time series tokens.
-
-    Parameters
-    ----------
-    config
-        The configuration to use.
-    model
-        The pretrained model to use.
-    """
-
     def __init__(self, config: ChronosConfig, model: PreTrainedModel) -> None:
         super().__init__()
         self.config = config
@@ -273,24 +261,6 @@ class ChronosModel(nn.Module):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
     ):
-        """
-        Extract the encoder embedding for the given token sequences.
-
-        Parameters
-        ----------
-        input_ids
-            Tensor of indices of input sequence tokens in the vocabulary
-            with shape (batch_size, sequence_length).
-        attention_mask
-            A mask tensor of the same shape as input_ids to avoid attending
-            on padding or missing tokens.
-
-        Returns
-        -------
-        embedding
-            A tensor of encoder embeddings with shape
-            (batch_size, sequence_length, d_model).
-        """
         assert (
             self.config.model_type == "seq2seq"
         ), "Encoder embeddings are only supported for encoder-decoder models"
@@ -308,20 +278,6 @@ class ChronosModel(nn.Module):
         top_k: Optional[int] = None,
         top_p: Optional[float] = None,
     ) -> torch.Tensor:
-        """
-        Predict future sample tokens for the given token sequences.
-
-        Arguments ``prediction_length``, ``num_samples``, ``temperature``,
-        ``top_k``, ``top_p`` can be used to customize the model inference,
-        and default to the corresponding attributes in ``self.config`` if
-        not provided.
-
-        Returns
-        -------
-        samples
-            A tensor of integers, shaped (batch_size, num_samples, time_length),
-            containing forecasted sample paths.
-        """
         if prediction_length is None:
             prediction_length = self.config.prediction_length
         if num_samples is None:
@@ -374,21 +330,6 @@ def left_pad_and_stack_1D(tensors: List[torch.Tensor]) -> torch.Tensor:
 
 @dataclass
 class ChronosPipeline:
-    """
-    A ``ChronosPipeline`` uses the given tokenizer and model to forecast
-    input time series.
-
-    Use the ``from_pretrained`` class method to load serialized models.
-    Use the ``predict`` method to get forecasts.
-
-    Parameters
-    ----------
-    tokenizer
-        The tokenizer object to use.
-    model
-        The model to use.
-    """
-
     tokenizer: ChronosTokenizer
     model: ChronosModel
 
@@ -404,42 +345,6 @@ class ChronosPipeline:
 
         return context
 
-    @torch.no_grad()
-    def embed(
-        self, context: Union[torch.Tensor, List[torch.Tensor]]
-    ) -> Tuple[torch.Tensor, Any]:
-        """
-        Get encoder embeddings for the given time series.
-
-        Parameters
-        ----------
-        context
-            Input series. This is either a 1D tensor, or a list
-            of 1D tensors, or a 2D tensor whose first dimension
-            is batch. In the latter case, use left-padding with
-            ``torch.nan`` to align series of different lengths.
-
-        Returns
-        -------
-        embeddings, tokenizer_state
-            A tuple of two tensors: the encoder embeddings and the tokenizer_state,
-            e.g., the scale of the time series in the case of mean scaling.
-            The encoder embeddings are shaped (batch_size, context_length, d_model)
-            or (batch_size, context_length + 1, d_model), where context_length
-            is the size of the context along the time axis if a 2D tensor was provided
-            or the length of the longest time series, if a list of 1D tensors was
-            provided, and the extra 1 is for EOS.
-        """
-        context_tensor = self._prepare_and_validate_context(context=context)
-        token_ids, attention_mask, tokenizer_state = (
-            self.tokenizer.context_input_transform(context_tensor)
-        )
-        embeddings = self.model.encode(
-            input_ids=token_ids.to(self.model.device),
-            attention_mask=attention_mask.to(self.model.device),
-        ).cpu()
-        return embeddings, tokenizer_state
-
     def predict(
         self,
         context: Union[torch.Tensor, List[torch.Tensor]],
@@ -450,43 +355,6 @@ class ChronosPipeline:
         top_p: Optional[float] = None,
         limit_prediction_length: bool = True,
     ) -> torch.Tensor:
-        """
-        Get forecasts for the given time series.
-
-        Parameters
-        ----------
-        context
-            Input series. This is either a 1D tensor, or a list
-            of 1D tensors, or a 2D tensor whose first dimension
-            is batch. In the latter case, use left-padding with
-            ``torch.nan`` to align series of different lengths.
-        prediction_length
-            Time steps to predict. Defaults to what specified
-            in ``self.model.config``.
-        num_samples
-            Number of sample paths to predict. Defaults to what
-            specified in ``self.model.config``.
-        temperature
-            Temperature to use for generating sample tokens.
-            Defaults to what specified in ``self.model.config``.
-        top_k
-            Top-k parameter to use for generating sample tokens.
-            Defaults to what specified in ``self.model.config``.
-        top_p
-            Top-p parameter to use for generating sample tokens.
-            Defaults to what specified in ``self.model.config``.
-        limit_prediction_length
-            Force prediction length smaller or equal than the
-            built-in prediction length from the model. True by
-            default. When true, fail loudly if longer predictions
-            are requested, otherwise longer predictions are allowed.
-
-        Returns
-        -------
-        samples
-            Tensor of sample forecasts, of shape
-            (batch_size, num_samples, prediction_length).
-        """
         context_tensor = self._prepare_and_validate_context(context=context)
 
         if prediction_length is None:
@@ -536,12 +404,6 @@ class ChronosPipeline:
 
     @classmethod
     def from_pretrained(cls, *args, **kwargs):
-        """
-        Load the model, either from a local path or from the HuggingFace Hub.
-        Supports the same arguments as ``AutoConfig`` and ``AutoModel``
-        from ``transformers``.
-        """
-
         config = AutoConfig.from_pretrained(*args, **kwargs)
 
         assert hasattr(config, "chronos_config"), "Not a Chronos config file"

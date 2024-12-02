@@ -1,7 +1,9 @@
 training_data_paths:
-- "/home/yogi/chronos-research/arrow_data/kompas100-4000row.arrow"
+- "/home/yogi/chronos-research/arrow_data/42-LQ45.arrow"
+- "/home/yogi/chronos-research/chronos-forecasting/scripts/kernelsynth-data.arrow"
 probability:
-- 0.1
+- 0.8
+- 0.2
 context_length: 512
 prediction_length: 64
 min_past: 60

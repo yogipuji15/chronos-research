@@ -1,0 +1,3 @@
+python run_chronos.py /home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/configs/stock-market/stocks.yaml result-no-augment.csv --no-augment
+
+python run_chronos.py /home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/configs/stock-market/stocks.yaml result-augment.csv --augment

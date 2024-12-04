@@ -61,3 +61,17 @@
   num_rolls: 1
   max_history: 75
   distance: 20
+- name: GGRM
+  hf_repo: /home/yogi/chronos-research/dataset/daily-all
+  offset: -50
+  prediction_length: 50
+  num_rolls: 1
+  max_history: 150
+  distance: 20
+- name: UNVR
+  hf_repo: /home/yogi/chronos-research/dataset/daily-all
+  offset: -50
+  prediction_length: 50
+  num_rolls: 1
+  max_history: 75
+  distance: 20

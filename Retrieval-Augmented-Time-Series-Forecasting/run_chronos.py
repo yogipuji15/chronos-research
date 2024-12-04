@@ -322,27 +322,6 @@ def load_and_split_dataset(backtest_config: dict):
     df = df.sort_values(by='timestamp')
 
     freq = "D"  # Daily frequency
-    dataset = [
-        {
-            "start": pd.Period(df['timestamp'].iloc[0], freq=freq),
-            "target": df["close"].values
-        },
-        {
-            "start": pd.Period(df['timestamp'].iloc[0], freq=freq),
-            "target": df["open"].values
-        }
-    ]
-
-    test = [
-        {
-            "start": pd.Period(df['timestamp'].iloc[0], freq=freq),
-            "target": df["close"].iloc[:3500].values
-        },
-        {
-            "start": pd.Period(df['timestamp'].iloc[0], freq=freq),
-            "target": df["open"].iloc[:3500].values
-        }
-    ]
 
     data_augment=pd.read_csv("/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/augment.csv")
     augment=[]
@@ -351,21 +330,24 @@ def load_and_split_dataset(backtest_config: dict):
         freq = "D"  # Daily frequency
         augment_data = {
             "start": pd.Period(pd.to_datetime(data_augment[column][0]), freq=freq),
-            "target": pd.to_numeric(data_augment[column].iloc[1:].fillna(0).values)
+            "target": pd.to_numeric(data_augment[column].iloc[1:].dropna().values)
         }
         augment.append(augment_data)
 
-    train_df, test_df = train_test_split(dataset, train_size=0.7, random_state=42, shuffle=False)
+    train_df, remaining_df = train_test_split(df, train_size=0.7, random_state=42, shuffle=False)
+    valid_df, test_df = train_test_split(remaining_df, test_size=0.2 / (0.1 + 0.2), random_state=42, shuffle=False)
+
+    dataset = [
+        {
+            "start": pd.Period(test_df['timestamp'].iloc[0], freq=freq),
+            "target": test_df["close"].values
+        }
+    ]
 
     # Split dataset for evaluation
-    _, test_template = split(test_df, offset=-prediction_length)
+    _, test_template = split(dataset, offset=-prediction_length)
     test_data = test_template.generate_instances(prediction_length, windows=num_rolls, distance=distance, max_history=max_history)
 
-    # Split dataset for evaluation
-    # train_data, test_data = split(dataset, offset=-prediction_length)
-    # test_data = test_data.generate_instances(prediction_length)
-    print(test)
-    print("=====================================================================")
     return test_data, augment
 
 def generate_sample_forecasts(

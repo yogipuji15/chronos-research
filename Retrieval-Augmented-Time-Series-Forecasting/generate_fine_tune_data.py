@@ -208,6 +208,36 @@ def to_gluonts_univariate(hf_dataset: datasets.Dataset):
     return gts_dataset
 
 
+# def load_and_split_dataset(backtest_config: dict):
+#     hf_repo = backtest_config["hf_repo"]
+#     dataset_name = backtest_config["name"]
+#     offset = backtest_config["offset"]
+#     prediction_length = backtest_config["prediction_length"]
+#     num_rolls = backtest_config["num_rolls"]
+#     max_history = backtest_config["max_history"]
+#     distance = backtest_config["distance"]
+#     trust_remote_code = True if hf_repo == "autogluon/chronos_datasets_extra" else False
+
+#     ds = datasets.load_dataset(
+#         hf_repo, dataset_name, split="train", trust_remote_code=trust_remote_code
+#     )
+#     ds.set_format("numpy")
+
+#     gts_dataset = to_gluonts_univariate(ds)
+#     print(gts_dataset)
+#     train_df, remaining_df = train_test_split(gts_dataset, train_size=0.7, random_state=42)
+#     print(train_df)
+#     print(remaining_df)
+#     print("================================")
+#     valid_df, test_df = train_test_split(remaining_df, test_size=0.2 / (0.1 + 0.2), random_state=42)
+
+#     # Split dataset for evaluation
+#     _, valid_template = split(valid_df, offset=offset)   
+#     valid_data = valid_template.generate_instances(prediction_length, windows=num_rolls, distance=distance, max_history=max_history)
+    
+#     return valid_data, train_df
+
+
 def load_and_split_dataset(backtest_config: dict):
     hf_repo = backtest_config["hf_repo"]
     dataset_name = backtest_config["name"]
@@ -217,21 +247,45 @@ def load_and_split_dataset(backtest_config: dict):
     max_history = backtest_config["max_history"]
     distance = backtest_config["distance"]
     trust_remote_code = True if hf_repo == "autogluon/chronos_datasets_extra" else False
+    
+    file_path = f"{hf_repo}/{dataset_name}.csv"
+    df = pd.read_csv(file_path)
 
-    ds = datasets.load_dataset(
-        hf_repo, dataset_name, split="train", trust_remote_code=trust_remote_code
-    )
-    ds.set_format("numpy")
+    # Ensure the date column is in datetime format and sort by date
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = df.sort_values(by='timestamp')
 
-    gts_dataset = to_gluonts_univariate(ds)
-    train_df, remaining_df = train_test_split(gts_dataset, train_size=0.7, random_state=42)
-    valid_df, test_df = train_test_split(remaining_df, test_size=0.2 / (0.1 + 0.2), random_state=42)
+    freq = "D"  # Daily frequency
+    
+
+    data_augment=pd.read_csv("/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/augment.csv")
+    augment=[]
+
+    for column in data_augment.columns:
+        freq = "D"  # Daily frequency
+        augment_data = {
+            "start": pd.Period(pd.to_datetime(data_augment[column][0]), freq=freq),
+            "target": pd.to_numeric(data_augment[column].iloc[1:].dropna().values)
+        }
+        augment.append(augment_data)
+
+
+    train_df, remaining_df = train_test_split(df, train_size=0.7, random_state=42, shuffle=False)
+    
+    valid_df, test_df = train_test_split(remaining_df, test_size=0.2 / (0.1 + 0.2), random_state=42, shuffle=False)
+
+    dataset = [
+        {
+            "start": pd.Period(valid_df['timestamp'].iloc[0], freq=freq),
+            "target": valid_df["close"].values
+        }
+    ]
 
     # Split dataset for evaluation
-    _, valid_template = split(valid_df, offset=offset)   
+    _, valid_template = split(dataset, offset=offset)   
     valid_data = valid_template.generate_instances(prediction_length, windows=num_rolls, distance=distance, max_history=max_history)
     
-    return valid_data, train_df
+    return valid_data, augment
 
 
 def generate_datasets(
@@ -273,7 +327,7 @@ def generate_datasets(
 @app.command()
 def main(
     config_path: Path,
-    chronos_model_id: str = "amazon/chronos-t5-base",
+    chronos_model_id: str = "amazon/chronos-t5-small",
     device: str = "cuda:0",
     torch_dtype: str = "bfloat16",
     batch_size: int = 50,
@@ -323,9 +377,9 @@ def main(
         )
 
         if augment:
-            file_path = f'RAF_finetune_datasets/output_{dataset_name}.arrow'
+            file_path = f'RAF_finetune_datasets/output2_{dataset_name}.arrow'
         else:
-            file_path = f'Baseline_finetune_datasets/output_{dataset_name}.arrow'
+            file_path = f'Baseline_finetune_datasets/output2_{dataset_name}.arrow'
         
         convert_to_arrow(file_path, sample_datasets, start_times)
    

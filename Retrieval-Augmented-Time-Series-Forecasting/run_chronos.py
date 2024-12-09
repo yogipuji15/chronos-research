@@ -397,7 +397,7 @@ def generate_sample_forecasts(
 def main(
     config_path: Path,
     metrics_path: Path,
-    chronos_model_id: str = "amazon/chronos-t5-small",
+    chronos_model_id: str = "/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/RAF_models/run-2/checkpoint-final",
     device: str = "cuda:1",
     torch_dtype: str = "bfloat16",
     batch_size: int = 30,

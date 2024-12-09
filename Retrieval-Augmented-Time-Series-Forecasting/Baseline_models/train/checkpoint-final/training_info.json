@@ -1,0 +1,65 @@
+{
+    "training_config": {
+        "training_data_paths": "['/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_AALI.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_ANTM.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_ARTO.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_BBCA.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_EXCL.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_GGRM.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_ISAT.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_KLBF.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_TKIM.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_TLKM.arrow', '/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_finetune_datasets/outputtrain_UNVR.arrow']",
+        "probability": "[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]",
+        "context_length": 75,
+        "prediction_length": 10,
+        "min_past": 30,
+        "max_steps": 1000,
+        "save_steps": 100000,
+        "log_steps": 100,
+        "per_device_train_batch_size": 32,
+        "learning_rate": 1e-05,
+        "optim": "adamw_torch_fused",
+        "shuffle_buffer_length": 100000,
+        "gradient_accumulation_steps": 1,
+        "model_id": "amazon/chronos-t5-small",
+        "model_type": "seq2seq",
+        "random_init": false,
+        "tie_embeddings": true,
+        "output_dir": "./Baseline_models/",
+        "tf32": true,
+        "torch_compile": true,
+        "tokenizer_class": "MeanScaleUniformBins",
+        "tokenizer_kwargs": "{'low_limit': -15.0, 'high_limit': 15.0}",
+        "n_tokens": 4096,
+        "n_special_tokens": 2,
+        "pad_token_id": 0,
+        "eos_token_id": 1,
+        "use_eos_token": true,
+        "lr_scheduler_type": "linear",
+        "warmup_ratio": 0.0,
+        "dataloader_num_workers": 1,
+        "max_missing_prop": 0.9,
+        "num_samples": 20,
+        "temperature": 1.0,
+        "top_k": 50,
+        "top_p": 1.0,
+        "seed": 2009462283
+    },
+    "job_info": {
+        "cuda_available": true,
+        "device_count": 2,
+        "device_names": {
+            "0": "NVIDIA GeForce RTX 3060",
+            "1": "NVIDIA GeForce RTX 3060"
+        },
+        "mem_info": {
+            "0": [
+                9099935744,
+                12629508096
+            ],
+            "1": [
+                11155210240,
+                12629508096
+            ]
+        },
+        "torchelastic_launched": false,
+        "python_version": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:12:24) [GCC 11.2.0]",
+        "torch_version": "2.4.1+cu121",
+        "numpy_version": "1.26.4",
+        "gluonts_version": "0.15.1",
+        "transformers_version": "4.45.1",
+        "accelerate_version": "0.34.2"
+    }
+}

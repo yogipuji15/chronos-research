@@ -276,8 +276,8 @@ def load_and_split_dataset(backtest_config: dict):
 
     dataset = [
         {
-            "start": pd.Period(valid_df['timestamp'].iloc[0], freq=freq),
-            "target": valid_df["close"].values
+            "start": pd.Period(train_df['timestamp'].iloc[0], freq=freq),
+            "target": train_df["close"].values
         }
     ]
 

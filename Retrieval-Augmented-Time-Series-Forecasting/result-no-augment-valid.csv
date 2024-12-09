@@ -1,0 +1,12 @@
+dataset,model,MASE,WQL
+AALI,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,1.2671918710082115,0.011032880460833519
+ANTM,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,4.318635336821934,0.08391773346904097
+ARTO,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,2.0906623570763316,0.09096136506594815
+BBCA,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,2.0733757879849137,0.0166086255941451
+EXCL,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,4.717558005852842,0.08381052262780048
+GGRM,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,12.597770187723482,0.167873075381727
+ISAT,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,3.7064118895699356,0.06070881998552228
+KLBF,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,2.2186749277836135,0.023826435971834172
+TKIM,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,5.152545021244517,0.047447233853943525
+TLKM,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,11.204489380549864,0.1396277925183438
+UNVR,/home/yogi/chronos-research/Retrieval-Augmented-Time-Series-Forecasting/Baseline_models/valid/checkpoint-final,5.890029048039363,0.07025566965061694

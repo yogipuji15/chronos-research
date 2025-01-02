@@ -49,7 +49,9 @@ from chronos import ChronosConfig, ChronosTokenizer
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
-
+# Memeriksa apakah proses yang sedang berjalan adalah "proses utama".memeriksa apakah pekerjaan diluncurkan dalam pengaturan terdistribusi (dist.is_torchelastic_launched()). 
+# Jika tidak dalam pengaturan terdistribusi, ia mengembalikan True, yang menandakan bahwa proses utama sedang berjalan. 
+# Jika terdistribusi, ia memeriksa apakah nilai RANK adalah 0, yang biasanya merupakan proses utama dalam pelatihan terdistribusi. 
 def is_main_process() -> bool:
     """
     Check if we're on the main process.
@@ -59,6 +61,7 @@ def is_main_process() -> bool:
     return int(os.environ["RANK"]) == 0
 
 
+# Memeriksa apakah is_main_process() mengembalikan True, dan jika ya, ia mencatat pesan menggunakan logger yang diberikan.
 def log_on_main(msg: str, logger: logging.Logger, log_level: int = logging.INFO):
     """
     Log the given message using the given logger, if we're on the main process.
@@ -67,6 +70,9 @@ def log_on_main(msg: str, logger: logging.Logger, log_level: int = logging.INFO)
         logger.log(log_level, msg)
 
 
+# Memeriksa apakah CUDA (dukungan GPU) tersedia dan mengumpulkan informasi tentang perangkat GPU.
+# Memeriksa apakah pelatihan dijalankan dalam pengaturan terdistribusi menggunakan torch.distributed.
+# Mengumpulkan versi Python dan versi pustaka utama seperti PyTorch, NumPy, GluonTS, dan Transformers.
 def get_training_job_info() -> Dict:
     """
     Returns info about this training job.
@@ -104,6 +110,7 @@ def get_training_job_info() -> Dict:
     return job_info
 
 
+# Menyimpan informasi tentang konfigurasi pelatihan dan informasi lingkungan pelatihan dalam file JSON di jalur cekpoint yang diberikan.
 def save_training_info(ckpt_path: Path, training_config: Dict):
     """
     Save info about this training job in a json file for documentation.
@@ -117,6 +124,8 @@ def save_training_info(ckpt_path: Path, training_config: Dict):
         )
 
 
+# Menghasilkan nama file berikutnya yang tersedia di dalam sebuah direktori berdasarkan nama file dasar, dengan menambahkan angka urut untuk menghindari penimpaan 
+# file yang sudah ada.
 def get_next_path(
     base_fname: str,
     base_dir: Path,
@@ -151,7 +160,10 @@ def get_next_path(
 
     return base_dir / fname
 
-
+# memuat model Hugging Face (baik model seq2seq atau causal) dengan konfigurasi tertentu seperti ukuran kosakata, ID token padding, dan ID token akhir, serta 
+# opsi inisialisasi acak.
+# Jika random_init diset True, model akan diinisialisasi dengan konfigurasi acak. Jika tidak, model akan dimuat dengan bobot terlatih dari model yang sudah ada (model pre-trained).
+# Setelah memuat model, ukuran token embeddings disesuaikan dengan vocab_size yang diberikan.
 def load_model(
     model_id="google/t5-efficient-tiny",
     model_type="seq2seq",
@@ -192,6 +204,8 @@ def load_model(
     return model
 
 
+# memeriksa apakah entri data memiliki cukup pengamatan (yaitu panjang data target lebih besar dari min_length dan proporsi nilai hilang (NaN) tidak melebihi 
+# max_missing_prop).
 def has_enough_observations(
     entry: dict, min_length: int = 0, max_missing_prop: float = 1.0
 ) -> bool:
@@ -216,6 +230,8 @@ def has_enough_observations(
     return False
 
 
+# Buffer digunakan untuk menyimpan entri data sementara. Jika ukuran buffer mencapai batas tertentu (shuffle_buffer_length), entri akan diambil secara acak dari 
+# buffer tersebut dan dihasilkan.
 class PseudoShuffledIterableDataset(IterableDataset):
     """
     Shuffle entries from an iterable by temporarily accumulating them
@@ -251,6 +267,7 @@ class PseudoShuffledIterableDataset(IterableDataset):
             yield shuffle_buffer.pop(idx)
 
 
+# Kelas mix-in ini memungkinkan dataset untuk memiliki kemampuan pengacakan dengan menambahkan metode shuffle.
 class ShuffleMixin:
     """
     Mix-in class that datasets can inherit from to get
@@ -261,6 +278,8 @@ class ShuffleMixin:
         return PseudoShuffledIterableDataset(self, shuffle_buffer_length)
 
 
+# subclass dari IterableDataset dan ShuffleMixin, yang memungkinkan dataset untuk diiterasi dalam mode pelatihan atau pengujian dan memberikan fungsionalitas pengacakan.
+# ChronosDataset dirancang untuk mengubah data deret waktu menjadi input yang dapat diterima oleh model berbasis Transformer seperti T5 atau GPT-2.
 class ChronosDataset(IterableDataset, ShuffleMixin):
     """
     Dataset wrapper, using a ``ChronosTokenizer`` to turn data from a time series
@@ -327,6 +346,9 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
         self.mode = mode
         self.np_dtype = np_dtype
 
+    # memproses setiap entri dalam dataset sebelum digunakan oleh model.
+    #  Jika model jenisnya adalah causal, metode imputasi diterapkan pada data yang hilang.
+    # Dalam mode pelatihan, ada kemungkinan untuk menghapus data secara acak (drop missing values) dengan probabilitas yang ditentukan oleh drop_prob.
     def preprocess_entry(self, entry: dict, mode: str) -> dict:
         entry = {f: entry[f] for f in ["start", "target"]}
         entry["target"] = np.asarray(entry["target"], dtype=self.np_dtype)
@@ -348,6 +370,10 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
 
         return entry
 
+    # mengembalikan sebuah splitter yang digunakan untuk membagi data menjadi potongan-potongan yang berisi data masa lalu (context) dan data masa depan (future) 
+    # berdasarkan context_length dan prediction_length.
+    # Splitter ini digunakan untuk membentuk entri dataset yang valid untuk pelatihan, pengujian, atau validasi. Misalnya, ExpectedNumInstanceSampler 
+    # digunakan untuk mode "training".
     def _create_instance_splitter(self, mode: str):
         assert mode in ["training", "test", "validation"]
 
@@ -373,6 +399,9 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
             dummy_value=np.nan,
         )
 
+    # mempersiapkan dataset untuk digunakan dalam mode pelatihan, pengujian, atau validasi.
+    # Transformasi data diterapkan untuk memastikan data yang dihasilkan sesuai dengan format yang diinginkan oleh model. Misalnya, dalam mode pelatihan, 
+    # data yang valid dipilih dengan FilterTransformation, yang menyaring data dengan pengamatan yang tidak hilang.
     def create_training_data(self, data):
         data = Cyclic(data)
         split_transform = self._create_instance_splitter(
@@ -391,6 +420,7 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
         data = self._create_instance_splitter("validation").apply(data, is_train=False)
         return data
 
+    # mengubah entri yang sudah diproses menjadi format yang kompatibel dengan Hugging Face Transformers.
     def to_hf_format(self, entry: dict) -> dict:
         past_target = torch.tensor(entry["past_target"]).unsqueeze(0)
         input_ids, attention_mask, scale = self.tokenizer.context_input_transform(
@@ -447,6 +477,7 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
             "labels": labels.squeeze(0),
         }
 
+    # mengiterasi dataset dan menghasilkan sampel yang sudah diproses.
     def __iter__(self) -> Iterator:
         preprocessed_datasets = [
             Map(
@@ -470,6 +501,10 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
                 for dataset in preprocessed_datasets
             ]
 
+        # menangani pembagian data untuk pipelining dalam mode paralel menggunakan lebih dari satu worker.
+        # Dengan menggunakan get_worker_info(), kode ini memastikan bahwa setiap worker mendapatkan bagian yang sesuai dari dataset sesuai dengan jumlah worker 
+        # yang ada, untuk memastikan distribusi data yang merata.
+        # Kemudian, probabilitas sampling diperbarui untuk memastikan bahwa distribusi data di setiap worker seimbang.
         worker_info = get_worker_info()
         if worker_info is None:
             probs = list(self.probabilities)
@@ -539,6 +574,8 @@ def main(
     top_p: float = 1.0,
     seed: Optional[int] = None,
 ):
+    # Pemeriksaan TF32: Jika TF32 diaktifkan (untuk mempercepat pelatihan di GPU NVIDIA dengan kemampuan komputasi >= 8, seperti A100), tetapi perangkat tidak 
+    # mendukungnya, maka akan menonaktifkan tf32.
     if tf32 and not (
         torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8
     ):
@@ -599,6 +636,7 @@ def main(
         logger,
     )
 
+    # Membaca data dari file yang diberikan & missing value probability
     # Check panjang data & missing value probability
     train_datasets = [
         Filter(
@@ -645,6 +683,7 @@ def main(
     # Add extra items to model config so that it's saved in the ckpt
     model.config.chronos_config = chronos_config.__dict__
 
+    # Membungkus dataset menjadi format yang bisa digunakan untuk pelatihan.
     shuffled_train_dataset = ChronosDataset(
         datasets=train_datasets,
         probabilities=probability,
@@ -658,6 +697,7 @@ def main(
     ).shuffle(shuffle_buffer_length=shuffle_buffer_length)
 
     # Define training args
+    # Mengonfigurasi parameter pelatihan
     training_args = TrainingArguments(
         output_dir=str(output_dir),
         per_device_train_batch_size=per_device_train_batch_size,
@@ -681,6 +721,7 @@ def main(
     )
 
     # Create Trainer instance
+    # Menginisialisasi objek pelatihan untuk model dan dataset yang sudah disiapkan
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -688,6 +729,7 @@ def main(
     )
     log_on_main("Training", logger)
 
+    # memulai pelatihan
     trainer.train()
 
     if is_main_process():
